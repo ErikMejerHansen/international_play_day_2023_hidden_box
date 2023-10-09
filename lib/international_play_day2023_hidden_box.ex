@@ -44,7 +44,7 @@ defmodule BoxesWithinBoxes do
     {:keep_state_and_data,
      [
        {:reply, from,
-        "The Jester pulls out a key from a pocket hidden somewhere in the folds of his jacket. A sliver key polished to a mirror shine. “See how it reflects the world back? Reflects back anything you give it unchanged. Completely devoid its own _identity_ this key is."}
+        "The Jester pulls out a key from a pocket hidden somewhere in the folds of his jacket. A sliver key polished to a mirror shine. “See how it reflects the world back? Reflects back anything you give it unchanged. Completely devoid its own identity this key is."}
      ]}
   end
 
@@ -116,5 +116,40 @@ defmodule BoxesWithinBoxes do
 
   def fourth_box({:call, from}, {:unlock, _arg}, _data) do
     {:keep_state_and_data, [{:reply, from, @non_functional_key_message}]}
+  end
+
+  def fifth_box({:call, from}, :hint, _data) do
+    priv_dir = :code.priv_dir(:international_play_day_2023_hidden_box)
+    path_to_puzzle = Path.join(priv_dir, "puzzle.png")
+    {:ok, puzzle} = File.read(path_to_puzzle)
+
+    {:keep_state_and_data,
+     [
+       {:reply, from, puzzle}
+     ]}
+  end
+
+  def fifth_box({:call, from}, {:unlock, arg}, data) when is_function(arg) do
+    if arg.() == 42 do
+      {:next_state, :done, data,
+       [
+         {:reply, from,
+          "The final box unlocks and within it you find your prize: https://www.youtube.com/watch?v=dQw4w9WgXcQ"}
+       ]}
+    else
+      {:keep_state_and_data,
+       [
+         {:reply, from, "Nice key! Although not one suited for this lock"}
+       ]}
+    end
+  end
+
+  def fifth_box({:call, from}, {:unlock, _arg}, _data) do
+    {:keep_state_and_data, [{:reply, from, @non_functional_key_message}]}
+  end
+
+  def done({:call, from}, _, _) do
+    {:keep_state_and_data,
+     [{:reply, from, "Nothing more to see here. Enjoy your gift and I hope you had fun."}]}
   end
 end
