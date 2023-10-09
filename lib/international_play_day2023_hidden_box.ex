@@ -1,6 +1,8 @@
 defmodule BoxesWithinBoxes do
   @behaviour :gen_statem
 
+  @non_functional_key_message "That key cannot turn this lock. The key seems non-functional"
+
   def unlock(pid, arg) do
     :gen_statem.call(pid, {:unlock, arg})
   end
@@ -35,7 +37,84 @@ defmodule BoxesWithinBoxes do
   end
 
   def first_box({:call, from}, {:unlock, _arg}, _data) do
+    {:keep_state_and_data, [{:reply, from, @non_functional_key_message}]}
+  end
+
+  def second_box({:call, from}, :hint, _data) do
     {:keep_state_and_data,
-     [{:reply, from, "This key cannot turn this lock. The key seems non-functional"}]}
+     [
+       {:reply, from,
+        "The Jester pulls out a key from a pocket hidden somewhere in the folds of his jacket. A sliver key polished to a mirror shine. “See how it reflects the world back? Reflects back anything you give it unchanged. Completely devoid its own _identity_ this key is."}
+     ]}
+  end
+
+  def second_box({:call, from}, {:unlock, arg}, data) when is_function(arg) do
+    random_number = :rand.uniform()
+
+    if arg.(random_number) === random_number do
+      {:next_state, :third_box, data, [{:reply, from, :unlocked}]}
+    else
+      {:keep_state_and_data,
+       [
+         {:reply, from,
+          "The key seems functional, but does not seem to reflect in quite the right way"}
+       ]}
+    end
+  end
+
+  def second_box({:call, from}, {:unlock, _arg}, _data) do
+    {:keep_state_and_data, [{:reply, from, @non_functional_key_message}]}
+  end
+
+  def third_box({:call, from}, :hint, _data) do
+    {:keep_state_and_data,
+     [
+       {:reply, from, Base.encode64("fn -> :obscuring_is_not_a_good_way_of_keeping_secrets end")}
+     ]}
+  end
+
+  def third_box({:call, from}, {:unlock, arg}, data) when is_function(arg) do
+    if arg.() == :obscuring_is_not_a_good_way_of_keeping_secrets do
+      {:next_state, :fourth_box, data, [{:reply, from, :unlocked}]}
+    else
+      {:keep_state_and_data,
+       [
+         {:reply, from,
+          "The key turns and turns in the lock. Even turning it 64-times isn’t enough to unlock the key. "}
+       ]}
+    end
+  end
+
+  def third_box({:call, from}, {:unlock, _arg}, _data) do
+    {:keep_state_and_data, [{:reply, from, @non_functional_key_message}]}
+  end
+
+  def fourth_box({:call, from}, :hint, _data) do
+    priv_dir = :code.priv_dir(:international_play_day_2023_hidden_box)
+    path_to_ghostbusters_theme = Path.join(priv_dir, "Ghostbusters.mid")
+    {:ok, ghostbusters_theme} = File.read(path_to_ghostbusters_theme)
+
+    {:keep_state_and_data,
+     [
+       {:reply, from, ghostbusters_theme}
+     ]}
+  end
+
+  def fourth_box({:call, from}, {:unlock, arg}, data) when is_function(arg) do
+    who_you_gonna_call = arg.()
+
+    if who_you_gonna_call == "Ghostbusters" do
+      IO.puts("📞?👻⛔️")
+      {:next_state, :fifth_box, data, [{:reply, from, :unlocked}]}
+    else
+      {:keep_state_and_data,
+       [
+         {:reply, from, "I tried calling #{who_you_gonna_call}, but no one answered."}
+       ]}
+    end
+  end
+
+  def fourth_box({:call, from}, {:unlock, _arg}, _data) do
+    {:keep_state_and_data, [{:reply, from, @non_functional_key_message}]}
   end
 end
